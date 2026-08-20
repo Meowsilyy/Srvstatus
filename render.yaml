@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .v5/chunk0* | base64 -d > /tmp/serverstatus-v5.tar.gz && tar -xzf /tmp/serverstatus-v5.tar.gz && python3 -m py_compile server.py
+    buildCommand: cat .v5/chunk0* | base64 -d > /tmp/serverstatus-v5.tar.gz && echo "4d53b60e4c3e29a150324776cd601c01776c392003ea49258d7e7de9e1fb2aef  /tmp/serverstatus-v5.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v5.tar.gz && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
