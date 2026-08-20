@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: serverstatus
+    runtime: python
+    plan: free
+    buildCommand: python3 -m py_compile server.py
+    startCommand: python3 server.py
+    healthCheckPath: /
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: NO_BROWSER
+        value: "1"
