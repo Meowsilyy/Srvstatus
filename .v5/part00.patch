@@ -1,0 +1,100 @@
+diff --git server.py server.py
+index 32c7649..86aba98 100644
+--- server.py
++++ server.py
+@@ -379,11 +379,92 @@ def lookup_ip_geo(ip):
+             "timezone": data.get("timezone"),
+             "connection": data.get("connection"),
+             "flag": data.get("flag"),
++            "source": "ipwho.is",
+         }
+     except Exception:
+         return None
+ 
+ 
++def lookup_ip_geo_secondary(ip):
++    try:
++        data = fetch_json(f"https://ipapi.co/{urllib.parse.quote(ip)}/json/", 5)
++        if data.get("error"):
++            return None
++        return {
++            "ip": data.get("ip"),
++            "country": data.get("country_name"),
++            "countryCode": data.get("country_code"),
++            "region": data.get("region"),
++            "city": data.get("city"),
++            "latitude": data.get("latitude"),
++            "longitude": data.get("longitude"),
++            "postal": data.get("postal"),
++            "timezone": data.get("timezone"),
++            "asn": data.get("asn"),
++            "org": data.get("org"),
++            "source": "ipapi.co",
++        }
++    except Exception:
++        return None
++
++
++def apply_location_crosscheck(primary, secondary, registration, enabled):
++    if not primary and not secondary:
++        return primary, {"enabled": enabled, "status": "unavailable", "sources": []}
++    base = dict(primary or secondary or {})
++    if not enabled:
++        return base, {"enabled": False, "status": "off", "sources": []}
++    sources = []
++    for name, item in (("ipwho.is", primary), ("ipapi.co", secondary)):
++        if item and item.get("countryCode"):
++            sources.append({
++                "source": name,
++                "country": item.get("country"),
++                "countryCode": str(item.get("countryCode") or "").upper(),
++                "region": item.get("region"),
++                "city": item.get("city"),
++            })
++    if registration and registration.get("country"):
++        sources.append({
++            "source": "RDAP",
++            "country": None,
++            "countryCode": str(registration.get("country") or "").upper(),
++            "region": None,
++            "city": None,
++        })
++    counts = {}
++    for item in sources:
++        code = item.get("countryCode")
++        if code:
++            counts[code] = counts.get(code, 0) + 1
++    selected = max(counts, key=counts.get) if counts else None
++    best_count = counts.get(selected, 0) if selected else 0
++    if len(sources) <= 1:
++        status = "single-source"
++    elif best_count >= 2:
++        status = "confirmed"
++    else:
++        status = "conflict"
++    chosen = None
++    for item in (primary, secondary):
++        if item and str(item.get("countryCode") or "").upper() == selected:
++            chosen = item
++            break
++    if chosen:
++        for key in ("continent", "country", "countryCode", "region", "city", "latitude", "longitude", "postal", "timezone", "flag"):
++            if chosen.get(key) is not None:
++                base[key] = chosen.get(key)
++    verification = {
++        "enabled": True,
++        "status": status,
++        "selectedCountryCode": selected,
++        "agreement": f"{best_count}/{len(sources)}" if sources else None,
++        "sources": sources,
++    }
++    base["verification"] = verification
++    return base, verification
++
++
+ def entity_name(entity):
+     if not entity:
+         return None
+@@ -1198,6 +1279,7 @@ def lookup(value, options=None):
+         scan_timeout = 500
+     scan_timeout = max(100, min(scan_timeout, 1500))
