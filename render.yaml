@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .v5/part*.patch > /tmp/serverstatus-v5.patch && git apply --check /tmp/serverstatus-v5.patch && git apply /tmp/serverstatus-v5.patch && python3 -m py_compile server.py
+    buildCommand: cat .v5/part*.patch > /tmp/serverstatus-v5.patch && git apply -p0 --check /tmp/serverstatus-v5.patch && git apply -p0 /tmp/serverstatus-v5.patch && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
