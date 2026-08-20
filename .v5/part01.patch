@@ -1,0 +1,100 @@
+     minecraft_enabled = options.get("minecraft") is not False
++    location_cross_check = options.get("locationCrossCheck") is not False
+     lookup_mode = str(options.get("lookupMode") or "server").lower()
+     if lookup_mode not in {"server", "ip"}:
+         lookup_mode = "server"
+@@ -1219,6 +1301,7 @@ def lookup(value, options=None):
+     root_domain = rdap["rootDomain"]
+     primary_ip = target["hostname"] if ip_lookup else http_data["final"]["remoteAddress"] if http_data.get("available") else resolved[0]["address"] if resolved else None
+     geo_future = EXECUTOR.submit(lookup_ip_geo, primary_ip) if primary_ip else None
++    geo_secondary_future = EXECUTOR.submit(lookup_ip_geo_secondary, primary_ip) if primary_ip and location_cross_check else None
+     ip_rdap_future = EXECUTOR.submit(lookup_ip_rdap, primary_ip) if primary_ip else None
+     dnssec_future = EXECUTOR.submit(lookup_dnssec, root_domain) if root_domain and not ip_lookup else None
+     mail_future = EXECUTOR.submit(email_dns, root_domain) if root_domain and not ip_lookup else None
+@@ -1226,7 +1309,9 @@ def lookup(value, options=None):
+     minecraft_should_run = (not ip_lookup) and minecraft_enabled and (not is_ip_target or (target.get("explicitPort") and target.get("port") in {25565, 19132}))
+     mc_future = EXECUTOR.submit(minecraft_lookup, minecraft_address(target)) if minecraft_should_run else None
+     ip_geo = geo_future.result() if geo_future else None
++    ip_geo_secondary = geo_secondary_future.result() if geo_secondary_future else None
+     ip_rdap = ip_rdap_future.result() if ip_rdap_future else None
++    ip_geo, location_verification = apply_location_crosscheck(ip_geo, ip_geo_secondary, ip_rdap, location_cross_check)
+     dnssec = dnssec_future.result() if dnssec_future else None
+     mail = mail_future.result() if mail_future else None
+     service_scan = scan_future.result() if scan_future else {"mode": scan_mode, "address": primary_ip, "checked": 0, "open": 0, "timeoutMs": scan_timeout, "durationMs": 0, "results": []}
+@@ -1344,6 +1429,7 @@ def lookup(value, options=None):
+             "targetType": target["targetType"],
+             "ipVersion": target["ipVersion"],
+             "lookupMode": lookup_mode,
++            "locationCrossCheck": location_cross_check,
+             "rootDomain": root_domain,
+             "generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+             "durationMs": now_ms() - started,
+@@ -1355,7 +1441,7 @@ def lookup(value, options=None):
+         "tls": tls_data,
+         "dns": dns_data,
+         "dnssec": dnssec,
+-        "network": {"resolvedAddresses": resolved, "primaryIp": primary_ip, "geolocation": ip_geo, "registration": ip_rdap},
++        "network": {"resolvedAddresses": resolved, "primaryIp": primary_ip, "geolocation": ip_geo, "locationVerification": location_verification, "registration": ip_rdap},
+         "infrastructure": infrastructure,
+         "serviceScan": service_scan,
+         "registration": registration,
+diff --git public/app.js public/app.js
+index 39422f6..e9e1176 100644
+--- public/app.js
++++ public/app.js
+@@ -21,6 +21,7 @@ const defaults = {
+   scanTimeout: 500,
+   showClosed: false,
+   minecraft: true,
++  locationCrossCheck: true,
+   restoreLast: false,
+   recent: true
+ }
+@@ -59,6 +60,7 @@ function syncSettingsUi() {
+   $('settingScanTimeout').value = String(settings.scanTimeout)
+   $('settingShowClosed').checked = settings.showClosed
+   $('settingMinecraft').checked = settings.minecraft
++  $('settingLocationCrossCheck').checked = settings.locationCrossCheck
+   $('settingRestoreLast').checked = settings.restoreLast
+   $('settingRecent').checked = settings.recent
+   applyTheme()
+@@ -110,6 +112,10 @@ $('settingMinecraft').addEventListener('change', event => {
+   settings.minecraft = event.target.checked
+   saveSettings()
+ })
++$('settingLocationCrossCheck').addEventListener('change', event => {
++  settings.locationCrossCheck = event.target.checked
++  saveSettings()
++})
+ $('settingRestoreLast').addEventListener('change', event => {
+   settings.restoreLast = event.target.checked
+   saveSettings()
+@@ -429,6 +435,7 @@ function renderNetwork(data) {
+   const conn = geo.connection || {}
+   const reg = n.registration || {}
+   const addresses = table(['address', 'family'], (n.resolvedAddresses || []).map(a => [a.address, `IPv${a.family}`]))
++  const verify = n.locationVerification || geo.verification || {}
+   const geoKv = kv([
+     ['IP', geo.ip],
+     ['Country', geo.country ? `${geo.country} (${geo.countryCode || ''})` : null],
+@@ -436,6 +443,7 @@ function renderNetwork(data) {
+     ['City', geo.city],
+     ['Coordinates', geo.latitude != null ? `${geo.latitude}, ${geo.longitude}` : null],
+     ['Timezone', geo.timezone?.id || geo.timezone],
++    ['Location check', verify.enabled ? `${verify.status || 'checked'}${verify.agreement ? ` · ${verify.agreement}` : ''}` : 'off'],
+     ['ASN', conn.asn],
+     ['ISP', conn.isp],
+     ['Organization', conn.org],
+@@ -453,7 +461,9 @@ function renderNetwork(data) {
+   ])
+   const entities = table(['entity', 'roles'], (reg.entities || []).map(e => [e.name, e.roles?.join(', ')]))
+   const ipIntro = data.meta?.targetType === 'ip' ? `<div class="notice"><strong>${escapeHtml(data.meta.normalizedHost || '')}</strong> · IPv${escapeHtml(data.meta.ipVersion || '')} address</div>` : ''
+-  $('networkBody').innerHTML = `${ipIntro}<div class="grid3">${block('Addresses', addresses)}${block('Location / ASN', geoKv)}${block('IP registration', regKv)}</div>${block('Network entities', entities)}`
++  const verifyRows = table(['source', 'country', 'region', 'city'], (verify.sources || []).map(x => [x.source, x.country || x.countryCode, x.region, x.city]))
++  const verifyBlock = verify.enabled && verify.sources?.length ? block('Location sources', verifyRows) : ''
++  $('networkBody').innerHTML = `${ipIntro}<div class="grid3">${block('Addresses', addresses)}${block('Location / ASN', geoKv)}${block('IP registration', regKv)}</div>${verifyBlock}${block('Network entities', entities)}`
+ }
+ 
+ function renderDns(data) {
+@@ -573,30 +583,85 @@ function renderTechnology(data) {
+   $('technologyBody').innerHTML = table(['technology', 'type', 'confidence', 'evidence'], rows)
