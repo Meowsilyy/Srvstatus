@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: base64 -d .v5/serverstatus-v5.zip.b64 > /tmp/serverstatus-v5.zip && python3 -c "import zipfile; zipfile.ZipFile('/tmp/serverstatus-v5.zip').extractall('.')" && python3 -m py_compile server.py
+    buildCommand: base64 -d .v5/serverstatus-v5.zip.b64 > /tmp/serverstatus-v5.zip && unzip -oq /tmp/serverstatus-v5.zip -d . && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
