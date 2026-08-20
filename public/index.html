@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090a0c">
+  <title>ServerStatus</title>
+  <meta name="description" content="Server and website lookup for DNS, HTTP, TLS, hosting, network, services, registration and Minecraft status.">
+  <script>
+    try {
+      const raw = localStorage.getItem('serverstatus-settings') || localStorage.getItem('serverinfo-settings') || '{}'
+      const saved = JSON.parse(raw)
+      const theme = saved.theme || 'dark'
+      const resolved = theme === 'system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : theme
+      document.documentElement.dataset.theme = resolved
+      document.documentElement.dataset.themeChoice = theme
+      if (saved.compact) document.documentElement.dataset.compact = 'true'
+    } catch {
+      document.documentElement.dataset.theme = 'dark'
+    }
+  </script>
+  <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=4">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ServerStatus home">
+      <svg class="brandicon" viewBox="0 0 28 28" aria-hidden="true">
+        <path d="M4.5 5.5h19v6h-19zM4.5 16.5h19v6h-19z"/>
+        <path class="brandaccent" d="M7.5 8.5h2M7.5 19.5h2M18 8.5h2.5M18 19.5h2.5"/>
+      </svg>
+      <span class="brandname">ServerStatus</span>
+    </a>
+    <div class="topactions">
+      <div class="topmeta"><span id="runState">Idle</span><span id="runTime">—</span></div>
+      <button class="iconbutton" id="settingsButton" type="button" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.7 2.8h4.6l.5 2.1c.5.2 1 .5 1.4.8l2-.7 2.3 4-1.6 1.4c0 .3.1.6.1.9s0 .6-.1.9l1.6 1.4-2.3 4-2-.7c-.4.3-.9.6-1.4.8l-.5 2.1H9.7l-.5-2.1c-.5-.2-1-.5-1.4-.8l-2 .7-2.3-4 1.6-1.4a7 7 0 0 1 0-1.8L3.5 9l2.3-4 2 .7c.4-.3.9-.6 1.4-.8l.5-2.1ZM12 8.1a3.9 3.9 0 1 0 0 7.8 3.9 3.9 0 0 0 0-7.8Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="settingsbackdrop hidden" id="settingsBackdrop"></div>
+  <aside class="settingspanel" id="settingsPanel" aria-hidden="true">
+    <div class="settingshead">
+      <b>Settings</b>
+      <button class="iconbutton quiet" id="settingsClose" type="button" aria-label="Close settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.7 5.3 5.3 5.3 5.3-5.3 1.4 1.4-5.3 5.3 5.3 5.3-1.4 1.4-5.3-5.3-5.3 5.3-1.4-1.4 5.3-5.3-5.3-5.3 1.4-1.4Z"/></svg>
+      </button>
+    </div>
+    <div class="settingsbody">
+      <div class="settingsgroup">Appearance</div>
+      <label class="settingrow">
+        <span><b>Theme</b><small>Dark, light or system</small></span>
+        <select id="settingTheme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="system">System</option>
+        </select>
+      </label>
+      <label class="settingrow switchrow">
+        <span><b>Compact layout</b><small>Reduce row and card spacing</small></span>
+        <input id="settingCompact" type="checkbox">
+      </label>
+
+      <div class="settingsgroup">Lookup</div>
+      <label class="settingrow">
+        <span><b>Service scan</b><small>TCP ports checked with each lookup</small></span>
+        <select id="settingScanMode">
+          <option value="off">Off</option>
+          <option value="common">Common</option>
+          <option value="extended">Extended</option>
+        </select>
+      </label>
+      <label class="settingrow">
+        <span><b>Port timeout</b><small>Connection timeout per port</small></span>
+        <select id="settingScanTimeout">
+          <option value="250">250 ms</option>
+          <option value="500">500 ms</option>
+          <option value="900">900 ms</option>
+        </select>
+      </label>
+      <label class="settingrow switchrow">
+        <span><b>Show closed services</b><small>Include closed ports in the report</small></span>
+        <input id="settingShowClosed" type="checkbox">
+      </label>
+      <label class="settingrow switchrow">
+        <span><b>Minecraft</b><small>Check Java and Bedrock status</small></span>
+        <input id="settingMinecraft" type="checkbox">
+      </label>
+
+      <div class="settingsgroup">Local history</div>
+      <label class="settingrow switchrow">
+        <span><b>Restore last target</b><small>Run the last lookup when ServerStatus opens</small></span>
+        <input id="settingRestoreLast" type="checkbox">
+      </label>
+      <label class="settingrow switchrow">
+        <span><b>Recent targets</b><small>Keep the last six targets in this browser</small></span>
+        <input id="settingRecent" type="checkbox">
+      </label>
+      <div class="settingsbuttons">
+        <button id="settingsClearRecent" type="button">Clear recent</button>
+        <button id="settingsReset" type="button">Reset settings</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="shell">
+    <aside class="rail" id="rail">
+      <div class="railtitle">Report</div>
+      <a href="#overview" class="active">Overview</a>
+      <a href="#infrastructure">Infrastructure</a>
+      <a href="#services">Services</a>
+      <a href="#http">HTTP</a>
+      <a href="#edge">Edge</a>
+      <a href="#network">Network</a>
+      <a href="#dns">DNS</a>
+      <a href="#tls">TLS</a>
+      <a href="#security">Security</a>
+      <a href="#registration">Registration</a>
+      <a href="#email">Email DNS</a>
+      <a href="#technology">Technology</a>
+      <a href="#minecraft">Minecraft</a>
+      <a href="#files">Site files</a>
+      <a href="#raw">Raw JSON</a>
+    </aside>
+
+    <section class="content">
+      <section class="lookupbar">
+        <div class="lookuplabel">
+          <span>Target</span>
+          <small>Domain, IP, URL or Minecraft address</small>
+        </div>
+        <form id="lookupForm" class="searchrow">
+          <input id="targetInput" name="target" autocomplete="off" spellcheck="false" placeholder="example.com   1.1.1.1   play.example.net:25565" aria-label="Server target">
+          <button type="submit" id="lookupButton">Lookup</button>
+        </form>
+        <div class="lookupdetails">DNS records · IP / ASN · provider · HTTP headers · TLS certificate · TCP services · registration · mail DNS · software · Minecraft</div>
+      </section>
+
+      <div id="recentBar" class="recentbar hidden">
+        <span>Recent</span>
+        <div id="recentTargets" class="recenttargets"></div>
+      </div>
+
+      <div id="errorBox" class="errorbox hidden"></div>
+      <div id="emptyState" class="empty">
+        <div class="emptycode">Ready</div>
+        <h1>Enter a target.</h1>
+        <p>View DNS records, IP and ASN ownership, hosting provider, HTTP response details, TLS certificate data, detected services, domain registration, mail records, software fingerprints and Minecraft status.</p>
+      </div>
+      <div id="loadingState" class="loading hidden">
+        <div class="loaderline"><span></span></div>
+        <div class="loadinggrid">
+          <b>Looking up</b>
+          <span id="loadingTarget">—</span>
+          <span id="loadingElapsed">0.0s</span>
+        </div>
+      </div>
+
+      <div id="results" class="hidden">
+        <section id="overview" class="section">
+          <div class="sectionhead"><h2>Overview</h2><span id="generatedAt"></span></div>
+          <div id="overviewGrid" class="metricgrid"></div>
+          <div id="overviewSignals" class="signalstrip"></div>
+        </section>
+
+        <section id="infrastructure" class="section"><div class="sectionhead"><h2>Infrastructure</h2></div><div id="infrastructureBody"></div></section>
+        <section id="services" class="section"><div class="sectionhead"><h2>Services</h2></div><div id="servicesBody"></div></section>
+        <section id="http" class="section"><div class="sectionhead"><h2>HTTP</h2></div><div id="httpBody"></div></section>
+        <section id="edge" class="section"><div class="sectionhead"><h2>Edge</h2></div><div id="edgeBody"></div></section>
+        <section id="network" class="section"><div class="sectionhead"><h2>Network</h2></div><div id="networkBody"></div></section>
+        <section id="dns" class="section"><div class="sectionhead"><h2>DNS</h2></div><div id="dnsBody"></div></section>
+        <section id="tls" class="section"><div class="sectionhead"><h2>TLS</h2></div><div id="tlsBody"></div></section>
+        <section id="security" class="section"><div class="sectionhead"><h2>Security headers</h2></div><div id="securityBody"></div></section>
+        <section id="registration" class="section"><div class="sectionhead"><h2>Registration</h2></div><div id="registrationBody"></div></section>
+        <section id="email" class="section"><div class="sectionhead"><h2>Email DNS</h2></div><div id="emailBody"></div></section>
+        <section id="technology" class="section"><div class="sectionhead"><h2>Technology</h2></div><div id="technologyBody"></div></section>
+        <section id="minecraft" class="section"><div class="sectionhead"><h2>Minecraft</h2></div><div id="minecraftBody"></div></section>
+        <section id="files" class="section"><div class="sectionhead"><h2>Site files</h2></div><div id="filesBody"></div></section>
+        <section id="raw" class="section rawsection"><div class="sectionhead"><h2>Raw JSON</h2><button id="copyJson" type="button">Copy</button></div><pre id="rawJson"></pre></section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js?v=4"></script>
+</body>
+</html>
