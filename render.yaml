@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .v7/chunk00 .v7/chunk01 .v7/chunk02 .v7/chunk03 .v7/chunk04a .v7/chunk04b .v7/chunk05a .v7/chunk05b .v7/chunk06a .v7/chunk06b .v7/chunk07a .v7/chunk07b .v7/chunk08a .v7/chunk08b .v7/r00 .v7/r01 .v7/r02 .v7/r03 .v7/r04 .v7/r05 .v7/r06 .v7/r07 .v7/r08 .v7/r09 .v7/r10 .v7/r11 .v7/r12a .v7/r12b | base64 -d > /tmp/serverstatus-v7.tar.gz && echo "247d2f2728a80ca1ff561915d552749bb5a22f48a1d95f6b0da6685a462abf77  /tmp/serverstatus-v7.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v7.tar.gz && python3 -m py_compile server.py
+    buildCommand: cat .v8/bin00 .v8/bin01 .v8/bin02 .v8/bin03 .v8/bin04 > /tmp/serverstatus-v8.tar.gz && echo "9409879a7a8ed9e9067ce2d48e490f204752a988a9e26fbf25d4f13020c48a54  /tmp/serverstatus-v8.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v8.tar.gz && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
