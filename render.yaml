@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .v6/chunk00 .v6/chunk01 .v6/fix02a1 .v6/fix02a2p1 .v6/fix02a2p2 .v6/fix02a2p3_1 .v6/fix02a2p3_2 .v6/fix02a2p4 .v6/fix02b .v6/fix03a .v6/fix03b .v6/fix04a .v6/fix04b .v6/fix05a .v6/fix05b .v6/chunk06 .v6/chunk07 .v6/chunk08 | base64 -d > /tmp/serverstatus-v6.tar.gz && echo "747abd1ad43c511cfa415dcdfcb2d4d543612738a114093ef9b6c0c09b5eecbc  /tmp/serverstatus-v6.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v6.tar.gz && python3 -m py_compile server.py
+    buildCommand: cat .v7/chunk00 .v7/chunk01 .v7/chunk02 .v7/chunk03 .v7/chunk04a .v7/chunk04b .v7/chunk05a .v7/chunk05b .v7/chunk06a .v7/chunk06b .v7/chunk07a .v7/chunk07b .v7/chunk08a .v7/chunk08b .v7/r00 .v7/r01 .v7/r02 .v7/r03 .v7/r04 .v7/r05 .v7/r06 .v7/r07 .v7/r08 .v7/r09 .v7/r10 .v7/r11 .v7/r12a .v7/r12b | base64 -d > /tmp/serverstatus-v7.tar.gz && echo "247d2f2728a80ca1ff561915d552749bb5a22f48a1d95f6b0da6685a462abf77  /tmp/serverstatus-v7.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v7.tar.gz && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
