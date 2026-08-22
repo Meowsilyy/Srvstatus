@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .v8/bin00 .v8/bin01 .v8/bin02 .v8/bin03 .v8/bin04 > /tmp/serverstatus-v8.tar.gz && echo "9409879a7a8ed9e9067ce2d48e490f204752a988a9e26fbf25d4f13020c48a54  /tmp/serverstatus-v8.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v8.tar.gz && python3 -m py_compile server.py
+    buildCommand: cat .v8/g000 .v8/g001 .v8/g002 .v8/g003 .v8/g010 .v8/g011 .v8/g012 .v8/g013 .v8/g02 .v8/g030a .v8/g030b .v8/g031a .v8/g031b .v8/g032a .v8/g032b .v8/g033a .v8/g033b .v8/g04 > /tmp/serverstatus-v8.tar.gz && echo "9409879a7a8ed9e9067ce2d48e490f204752a988a9e26fbf25d4f13020c48a54  /tmp/serverstatus-v8.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v8.tar.gz && python3 -m py_compile server.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
