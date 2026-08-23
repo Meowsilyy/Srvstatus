@@ -3,7 +3,9 @@
     if (document.querySelector('[data-unpack-link]')) return
     const host = document.querySelector('aside, nav, .sidebar, .settingspanel, .settings-panel') || document.body
     const link = document.createElement('a')
-    link.href = '/unpack.html'
+    link.href = 'https://unpack-rx3.onrender.com/'
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
     link.dataset.unpackLink = '1'
     link.textContent = 'Source & files'
     link.title = 'Open Unpack'
