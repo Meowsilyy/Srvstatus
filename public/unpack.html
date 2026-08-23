@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Unpack</title>
+  <link rel="stylesheet" href="/unpack/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/unpack.html" aria-label="Unpack home"><span class="mark">U</span><span>Unpack</span></a>
+    <div class="top-actions"><button id="themeBtn" class="plain">Theme</button><a class="quiet-link" href="/">ServerStatus</a></div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy"><h1>See what a site is actually serving.</h1><p>Source, files, response details, public network info, and Minecraft status in one place.</p></div>
+      <div class="lookup-card">
+        <div class="kind-switch" role="tablist">
+          <button class="kind active" data-kind="website">Website</button>
+          <button class="kind" data-kind="minecraft">Minecraft</button>
+        </div>
+        <form id="lookupForm" class="lookup-row">
+          <input id="valueInput" autocomplete="off" spellcheck="false" placeholder="example.com" aria-label="Address">
+          <select id="profileSelect" aria-label="Lookup speed">
+            <option value="quick">Quick</option>
+            <option value="fast">Fast</option>
+            <option value="standard" selected>Standard</option>
+            <option value="full">Full</option>
+          </select>
+          <button id="runBtn" type="submit" class="run">Unpack</button>
+        </form>
+        <div class="lookup-foot"><span id="hint">HTTP and HTTPS only. Public addresses only.</span><span id="status"></span></div>
+      </div>
+    </section>
+
+    <section id="empty" class="empty">
+      <div class="empty-title">Nothing loaded yet</div>
+      <div class="empty-copy">Drop in a site address, or switch to Minecraft for a server lookup.</div>
+    </section>
+
+    <section id="workspace" class="workspace hidden">
+      <aside class="rail" aria-label="Report sections">
+        <button class="rail-item active" data-section="overview">Overview</button>
+        <button class="rail-item web-only" data-section="source">Source</button>
+        <button class="rail-item web-only" data-section="files">Files</button>
+        <button class="rail-item web-only" data-section="network">Network</button>
+        <button class="rail-item web-only" data-section="headers">Headers</button>
+        <button class="rail-item web-only" data-section="security">Security</button>
+        <button class="rail-item mc-only hidden" data-section="minecraft">Minecraft</button>
+        <button class="rail-item" data-section="raw">Raw</button>
+        <div class="rail-spacer"></div>
+        <a class="rail-link" href="/">More network detail <span>↗</span></a>
+      </aside>
+      <div id="content" class="content"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/unpack/app.js"></script>
+</body>
+</html>
