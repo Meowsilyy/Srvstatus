@@ -427,7 +427,7 @@ public partial class MainWindow : Window
     private void RenderRaw()
     {
         var toolbar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 0, 8) };
-        var copy = new Button { Content = "Copy JSON", Padding = new Thickness(12, 6) };
+        var copy = new Button { Content = "Copy JSON", Padding = new Thickness(12, 6, 12, 6) };
         copy.Click += (_, _) => Clipboard.SetText(_report!.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
         toolbar.Children.Add(copy);
         SectionBody.Children.Add(toolbar);
