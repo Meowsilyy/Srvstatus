@@ -1,0 +1,77 @@
+name: Patch desktop source
+
+on:
+  push:
+    branches:
+      - serverstatus-app
+    paths:
+      - .github/workflows/patch-desktop-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: serverstatus-app
+          fetch-depth: 0
+      - name: Apply compiler fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("desktop/NetworkEngine.cs")
+          text = path.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  '''            var host = parsedIp.ToString();
+            var bracketed = parsedIp.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{host}]" : host;
+            return new TargetInfo(raw, host, 443, "https", "/", false, $"https://{bracketed}/", true, null);''',
+                  '''            var ipHost = parsedIp.ToString();
+            var bracketed = parsedIp.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{ipHost}]" : ipHost;
+            return new TargetInfo(raw, ipHost, 443, "https", "/", false, $"https://{bracketed}/", true, null);'''
+              ),
+              (
+                  '''        var raw = await SafeJsonAsync($"https://rdap.org/ip/{Uri.EscapeDataString(ip)}", ct);
+        if (raw is not JsonObject obj || !string.IsNullOrWhiteSpace(GetString(obj["error"]))) return obj;''',
+                  '''        var raw = await SafeJsonAsync($"https://rdap.org/ip/{Uri.EscapeDataString(ip)}", ct);
+        if (raw is not JsonObject obj) return null;
+        if (!string.IsNullOrWhiteSpace(GetString(obj["error"]))) return obj;'''
+              ),
+              (
+                  '''        var coords = rows.Select(x => (Lat: GetDouble(x["latitude"]), Lon: GetDouble(x["longitude"]))).Where(x => x.Lat is not null && x.Lon is not null).Select(x => (x.Lat!.Value, x.Lon!.Value)).ToList();
+        double? avgLat = coords.Count > 0 ? coords.Average(x => x.Value) : null;
+        double? avgLon = coords.Count > 0 ? coords.Average(x => x.Value1) : null;
+        double maxSpread = 0;
+        for (var i = 0; i < coords.Count; i++)
+            for (var j = i + 1; j < coords.Count; j++)
+                maxSpread = Math.Max(maxSpread, HaversineKm(coords[i].Value, coords[i].Value1, coords[j].Value, coords[j].Value1));''',
+                  '''        var coords = rows.Select(x => (Lat: GetDouble(x["latitude"]), Lon: GetDouble(x["longitude"]))).Where(x => x.Lat is not null && x.Lon is not null).Select(x => (Lat: x.Lat!.Value, Lon: x.Lon!.Value)).ToList();
+        double? avgLat = coords.Count > 0 ? coords.Average(x => x.Lat) : null;
+        double? avgLon = coords.Count > 0 ? coords.Average(x => x.Lon) : null;
+        double maxSpread = 0;
+        for (var i = 0; i < coords.Count; i++)
+            for (var j = i + 1; j < coords.Count; j++)
+                maxSpread = Math.Max(maxSpread, HaversineKm(coords[i].Lat, coords[i].Lon, coords[j].Lat, coords[j].Lon));'''
+              )
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit("Expected source block was not found")
+              text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding="utf-8")
+      - name: Commit source fixes
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/NetworkEngine.cs
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix desktop network engine compiler errors"
+          git push origin HEAD:serverstatus-app
