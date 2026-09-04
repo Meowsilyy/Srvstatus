@@ -228,9 +228,9 @@ public sealed class NetworkEngine
         {
             if (!IPAddress.TryParse(raw.Trim('[', ']'), out var parsedIp) || !IsPublicIp(parsedIp))
                 throw new ArgumentException("IP mode requires a public IPv4 or IPv6 address.");
-            var host = parsedIp.ToString();
-            var bracketed = parsedIp.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{host}]" : host;
-            return new TargetInfo(raw, host, 443, "https", "/", false, $"https://{bracketed}/", true, null);
+            var ipHost = parsedIp.ToString();
+            var bracketed = parsedIp.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{ipHost}]" : ipHost;
+            return new TargetInfo(raw, ipHost, 443, "https", "/", false, $"https://{bracketed}/", true, null);
         }
 
         var explicitScheme = Regex.IsMatch(raw, "^https?://", RegexOptions.IgnoreCase);
@@ -628,7 +628,8 @@ public sealed class NetworkEngine
     private static async Task<JsonObject?> LookupIpRdapAsync(string ip, CancellationToken ct)
     {
         var raw = await SafeJsonAsync($"https://rdap.org/ip/{Uri.EscapeDataString(ip)}", ct);
-        if (raw is not JsonObject obj || !string.IsNullOrWhiteSpace(GetString(obj["error"]))) return obj;
+        if (raw is not JsonObject obj) return null;
+        if (!string.IsNullOrWhiteSpace(GetString(obj["error"]))) return obj;
         var entities = new JsonArray();
         if (obj["entities"] is JsonArray rawEntities)
         {
@@ -1127,13 +1128,13 @@ public sealed class NetworkEngine
         var country = rows.Select(x => GetString(x["country"])).Where(x => !string.IsNullOrWhiteSpace(x)).GroupBy(x => x!, StringComparer.OrdinalIgnoreCase).OrderByDescending(x => x.Count()).Select(x => x.Key).FirstOrDefault();
         var city = rows.Select(x => GetString(x["city"])).Where(x => !string.IsNullOrWhiteSpace(x)).GroupBy(x => x!, StringComparer.OrdinalIgnoreCase).OrderByDescending(x => x.Count()).Select(x => x.Key).FirstOrDefault();
         var region = rows.Select(x => GetString(x["region"])).Where(x => !string.IsNullOrWhiteSpace(x)).GroupBy(x => x!, StringComparer.OrdinalIgnoreCase).OrderByDescending(x => x.Count()).Select(x => x.Key).FirstOrDefault();
-        var coords = rows.Select(x => (Lat: GetDouble(x["latitude"]), Lon: GetDouble(x["longitude"]))).Where(x => x.Lat is not null && x.Lon is not null).Select(x => (x.Lat!.Value, x.Lon!.Value)).ToList();
-        double? avgLat = coords.Count > 0 ? coords.Average(x => x.Value) : null;
-        double? avgLon = coords.Count > 0 ? coords.Average(x => x.Value1) : null;
+        var coords = rows.Select(x => (Lat: GetDouble(x["latitude"]), Lon: GetDouble(x["longitude"]))).Where(x => x.Lat is not null && x.Lon is not null).Select(x => (Lat: x.Lat!.Value, Lon: x.Lon!.Value)).ToList();
+        double? avgLat = coords.Count > 0 ? coords.Average(x => x.Lat) : null;
+        double? avgLon = coords.Count > 0 ? coords.Average(x => x.Lon) : null;
         double maxSpread = 0;
         for (var i = 0; i < coords.Count; i++)
             for (var j = i + 1; j < coords.Count; j++)
-                maxSpread = Math.Max(maxSpread, HaversineKm(coords[i].Value, coords[i].Value1, coords[j].Value, coords[j].Value1));
+                maxSpread = Math.Max(maxSpread, HaversineKm(coords[i].Lat, coords[i].Lon, coords[j].Lat, coords[j].Lon));
         var sameCountry = country is not null && rows.Count(x => string.Equals(GetString(x["country"]), country, StringComparison.OrdinalIgnoreCase)) >= Math.Max(1, (rows.Count + 1) / 2);
         var confidence = rows.Count == 1 ? "low" : sameCountry && maxSpread <= 50 ? "high" : sameCountry && maxSpread <= 250 ? "medium" : "low";
         return new JsonObject
