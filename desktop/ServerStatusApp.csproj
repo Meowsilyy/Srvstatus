@@ -17,6 +17,8 @@
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="NetworkEngine.cs" />
+    <Compile Remove="NetworkEngine.Core.cs" />
+    <Compile Remove="NetworkEngine.Dns.cs" />
+    <Using Include="System.Net.Http" />
   </ItemGroup>
 </Project>
