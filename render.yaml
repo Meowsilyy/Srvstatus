@@ -3,7 +3,7 @@ services:
     name: serverstatus
     runtime: python
     plan: free
-    buildCommand: cat .release/v10/chunk00 .release/v10/chunk01 .release/v10/chunk02 .release/v10/chunk03 | base64 -d > /tmp/serverstatus-v10.tar.gz && echo "acd5ca8a90112013920c08b839305e152fded8671252cf663f799d0cd514abf3  /tmp/serverstatus-v10.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v10.tar.gz && python3 integrate_unpack.py && find . -type d -name __pycache__ -prune -exec rm -rf {} + && python3 -m py_compile server.py unpack_feature.py unpack_core.py unpack_core_v2.py unpack_minecraft.py unpack_pack.py
+    buildCommand: cat .release/v10/chunk00 .release/v10/chunk01 .release/v10/chunk02 .release/v10/chunk03 | base64 -d > /tmp/serverstatus-v10.tar.gz && echo "acd5ca8a90112013920c08b839305e152fded8671252cf663f799d0cd514abf3  /tmp/serverstatus-v10.tar.gz" | sha256sum -c - && tar -xzf /tmp/serverstatus-v10.tar.gz && python3 integrate_unpack.py && find . -type d -name __pycache__ -prune -exec rm -rf {} + && python3 -m py_compile server.py unpack_feature.py unpack_core.py unpack_core_v2.py unpack_core_v3.py unpack_minecraft.py unpack_pack.py
     startCommand: python3 server.py
     healthCheckPath: /
     envVars:
