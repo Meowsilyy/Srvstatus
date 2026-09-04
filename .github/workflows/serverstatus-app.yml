@@ -1,0 +1,41 @@
+name: ServerStatus App
+
+on:
+  push:
+    branches:
+      - serverstatus-app
+    paths:
+      - desktop/**
+      - .github/workflows/serverstatus-app.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - desktop/**
+      - .github/workflows/serverstatus-app.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: serverstatus-app-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet restore desktop/ServerStatusApp.csproj
+      - run: dotnet build desktop/ServerStatusApp.csproj -c Release --no-restore
+      - run: dotnet publish desktop/ServerStatusApp.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -o publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ServerStatus-win-x64
+          path: publish/
+          if-no-files-found: error
+          compression-level: 0
