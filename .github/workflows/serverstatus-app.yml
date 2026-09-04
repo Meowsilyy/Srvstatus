@@ -1,10 +1,22 @@
 name: ServerStatus App
 
 on:
+  push:
+    branches:
+      - serverstatus-app
+    paths:
+      - desktop/**
+      - .github/workflows/serverstatus-app.yml
   pull_request:
     branches:
       - main
+    paths:
+      - desktop/**
+      - .github/workflows/serverstatus-app.yml
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -22,3 +34,4 @@ jobs:
           name: ServerStatus-win-x64
           path: publish/
           if-no-files-found: error
+          compression-level: 0
