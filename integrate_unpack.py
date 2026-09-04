@@ -8,7 +8,7 @@ server = server_path.read_text(encoding="utf-8")
 if "import unpack_feature" not in server:
     server = "import unpack_feature\n" + server
 post_needle = "    def do_POST(self):\n"
-post_insert = "    def do_POST(self):\n        if self.path == \"/api/unpack\":\n            return unpack_feature.handle_unpack(self)\n"
+post_insert = "    def do_POST(self):\n        if self.path == \"/api/unpack\":\n            return unpack_feature.handle_unpack(self)\n        if self.path == \"/api/unpack/export\":\n            return unpack_feature.handle_export(self)\n        if self.path == \"/api/unpack/pack-download\":\n            return unpack_feature.handle_pack_download(self)\n"
 if post_insert not in server:
     if post_needle not in server:
         raise SystemExit("Could not find ServerStatusHandler.do_POST")
