@@ -4,7 +4,7 @@ import re
 import threading
 import time
 
-from unpack_core_v3 import build_site_archive, build_web_report
+from unpack_core_v4 import build_site_archive, build_web_report
 from unpack_minecraft import build_minecraft_report
 from unpack_pack import download_pack_url, inspect_pack_url
 
