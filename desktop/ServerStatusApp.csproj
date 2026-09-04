@@ -16,4 +16,7 @@
     <DebugSymbols>false</DebugSymbols>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="NetworkEngine.cs" />
+  </ItemGroup>
 </Project>
