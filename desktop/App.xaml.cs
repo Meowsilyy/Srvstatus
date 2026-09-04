@@ -10,8 +10,9 @@ public partial class App : Application
         var resolved = theme;
         if (string.Equals(theme, "system", StringComparison.OrdinalIgnoreCase))
         {
-            var light = SystemParameters.WindowGlassColor.GetBrightness() > 0.45;
-            resolved = light ? "light" : "dark";
+            var color = SystemParameters.WindowGlassColor;
+            var brightness = (color.R * 299 + color.G * 587 + color.B * 114) / 255000.0;
+            resolved = brightness > 0.45 ? "light" : "dark";
         }
 
         if (string.Equals(resolved, "light", StringComparison.OrdinalIgnoreCase))
