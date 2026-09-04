@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Remove="NetworkEngine.Core.cs" />
     <Compile Remove="NetworkEngine.Dns.cs" />
+    <Using Include="System.IO" />
     <Using Include="System.Net.Http" />
   </ItemGroup>
 </Project>
